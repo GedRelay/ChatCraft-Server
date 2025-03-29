@@ -1,8 +1,11 @@
 #include "../include/CServer.h"
+#include "../include/const.h"
+#include <cstring>
 
 int main(){
     try{
-        unsigned short port = 8080;
+        // unsigned short port = stoi((*ConfigManager::GetInstance())["GateServer"]["port"]);
+        unsigned short port = ConfigManager::GetConfigAs<unsigned short>("GateServer", "port");
         net::io_context io_context{ 1 };
         boost::asio::signal_set signals(io_context, SIGINT, SIGTERM);
         signals.async_wait(

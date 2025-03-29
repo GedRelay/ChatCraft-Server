@@ -39,14 +39,8 @@ void HttpConnection::HandleRequest(){
     }
     else if(_request.method() == http::verb::post){  // POST请求
         bool success = LogicSystem::GetInstance()->HandlePost(_request, _response);  // 处理POST请求
-
-        // _response.result(http::status::ok);
-        // _response.set(http::field::server, "GateServer");
-        // _response.set(http::field::content_type, "application/json");
         WriteResponse();
-        // return;
     }
-
 }
 
 

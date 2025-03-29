@@ -1,5 +1,6 @@
 #include "../include/LogicSystem.h"
 #include "../include/HttpConnection.h"
+#include "../include/VerifyGrpcClient.h"
 
 LogicSystem::LogicSystem(){
     // GET请求处理函数
@@ -19,10 +20,17 @@ LogicSystem::LogicSystem(){
             beast::ostream(response.body()) << response_json.toStyledString();
             return;
         }
+        // 向gRPC服务器发送请求
+        GetVarifyRsp grpc_response = VerifyGrpcClient::GetInstance()->GetVarifyCode(src_json["email"].asString());  // error, email, code
+        if(grpc_response.error() != 0){
+            response_json["status"] = "error";
+            response_json["msg"] = "get verify code error";
+            beast::ostream(response.body()) << response_json.toStyledString();
+            return;
+        }
         response_json["status"] = "ok";
-        response_json["msg"] = "get_verify_code";
-        response_json["data"] = src_json;
-        response_json["verify_code"] = "123456";
+        response_json["msg"] = "get verify code success";
+        response_json["verify_code"] = grpc_response.code();
         beast::ostream(response.body()) << response_json.toStyledString();
     };
 }

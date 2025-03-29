@@ -10,6 +10,7 @@
 #include <json/json.h>
 #include <json/reader.h>
 #include <json/value.h>
+#include "../../common/include/ConfigManager.h"
 
 
 namespace beast = boost::beast;
