@@ -4,7 +4,7 @@
 
 int main(){
     try{
-        // unsigned short port = stoi((*ConfigManager::GetInstance())["GateServer"]["port"]);
+        std::string host = ConfigManager::GetConfigAs("GateServer", "host");
         unsigned short port = ConfigManager::GetConfigAs<unsigned short>("GateServer", "port");
         net::io_context io_context{ 1 };
         boost::asio::signal_set signals(io_context, SIGINT, SIGTERM);
@@ -14,8 +14,9 @@ int main(){
             }
         );
 
-        std::make_shared<CServer>(io_context, port)->Start();
-        std::cout << "Server started at port " << port << std::endl;
+        std::shared_ptr<CServer> gate_server = std::make_shared<CServer>(io_context, host, port);
+        gate_server->Start();
+        std::cout << "Server started at " << host << ":" << port << std::endl;
         io_context.run();
         std::cout << "Server stopped" << std::endl;
     }

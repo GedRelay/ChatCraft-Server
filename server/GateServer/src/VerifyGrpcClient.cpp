@@ -2,7 +2,10 @@
 
 VerifyGrpcClient::VerifyGrpcClient() {
     // 创建 gRPC 通道
-    auto channel = grpc::CreateChannel("0.0.0.0:50051", grpc::InsecureChannelCredentials());
+    std::string verify_server_host = ConfigManager::GetConfigAs("VerifyServer", "host");
+    std::string verify_server_port = ConfigManager::GetConfigAs("VerifyServer", "port");
+    std::string verify_server_address = verify_server_host + ":" + verify_server_port;
+    auto channel = grpc::CreateChannel(verify_server_address, grpc::InsecureChannelCredentials());
     // 创建 stub
     _stub = VarifyService::NewStub(channel);
 }

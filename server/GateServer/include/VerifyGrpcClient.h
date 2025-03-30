@@ -1,8 +1,8 @@
 #pragma once
 #include "const.h"
 #include <grpcpp/grpcpp.h>
-#include "../../common/proto/message.grpc.pb.h"
-#include "../../common/include/Singleton.h"
+#include "proto/message.grpc.pb.h"
+#include "Singleton.h"
 
 using grpc::Channel;
 using grpc::ClientContext;

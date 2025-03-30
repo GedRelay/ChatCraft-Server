@@ -5,7 +5,7 @@
 
 class CServer: public std::enable_shared_from_this<CServer>{
 public:
-    CServer(net::io_context& io_context, unsigned short port);
+    CServer(net::io_context& io_context, std::string host, unsigned short port);
     void Start();
 private:
     tcp::acceptor _acceptor;

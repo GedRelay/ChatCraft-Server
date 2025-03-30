@@ -1,7 +1,7 @@
 #include "../include/CServer.h"
 
-CServer::CServer(net::io_context& io_context, unsigned short port): 
-    _acceptor(io_context, tcp::endpoint(tcp::v4(), port)),
+CServer::CServer(net::io_context& io_context, std::string host, unsigned short port): 
+    _acceptor(io_context, tcp::endpoint(net::ip::make_address(host), port)),
     _io_context(io_context),
     _socket(io_context){
 }

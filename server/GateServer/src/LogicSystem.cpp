@@ -24,7 +24,7 @@ LogicSystem::LogicSystem(){
         GetVarifyRsp grpc_response = VerifyGrpcClient::GetInstance()->GetVarifyCode(src_json["email"].asString());  // error, email, code
         if(grpc_response.error() != 0){
             response_json["status"] = "error";
-            response_json["msg"] = "get verify code error";
+            response_json["msg"] = "get verify code from VerifyServer error";
             beast::ostream(response.body()) << response_json.toStyledString();
             return;
         }
