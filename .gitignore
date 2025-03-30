@@ -1,9 +1,9 @@
 .vscode
 
-client/build
+build
 
-server/build
+bin
 
-server/bin
+smtp.json
 
-server/*/build
+node_modules
