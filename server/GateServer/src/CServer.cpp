@@ -7,11 +7,15 @@ CServer::CServer(net::io_context& io_context, std::string host, unsigned short p
 }
 
 void CServer::Start(){
+    net::io_context& io_context = AsioIOContextPool::GetInstance()->GetIOContext();
+    std::shared_ptr<HttpConnection> new_connection = std::make_shared<HttpConnection>(io_context);
     _acceptor.async_accept(
-        _socket,
-        [self = shared_from_this()](boost::system::error_code ec){
+        new_connection->GetSocket(),
+        [self = shared_from_this(), new_connection](const boost::system::error_code& ec) {
             if(!ec){
-                std::make_shared<HttpConnection>(std::move(self->_socket))->Start();
+                new_connection->Start();
+            } else {
+                std::cerr << "Accept error: " << ec.message() << std::endl;
             }
             self->Start();
         }

@@ -1,8 +1,13 @@
 #include "../include/HttpConnection.h"
 #include "../include/LogicSystem.h"
 
-HttpConnection::HttpConnection(tcp::socket socket): 
-    _socket(std::move(socket)){
+HttpConnection::HttpConnection(net::io_context& io_context):
+    _socket(io_context){
+}
+
+
+tcp::socket& HttpConnection::GetSocket(){
+    return _socket;
 }
 
 

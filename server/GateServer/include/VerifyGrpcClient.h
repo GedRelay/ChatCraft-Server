@@ -2,7 +2,7 @@
 #include "const.h"
 #include <grpcpp/grpcpp.h>
 #include "proto/message.grpc.pb.h"
-#include "Singleton.h"
+#include "GrpcStubPool.h"
 
 using grpc::Channel;
 using grpc::ClientContext;
@@ -19,6 +19,4 @@ public:
 
 private:
     VerifyGrpcClient();
-    
-    std::unique_ptr<VarifyService::Stub> _stub;
 };

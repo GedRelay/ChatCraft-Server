@@ -3,6 +3,7 @@
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/ini_parser.hpp>
 #include <boost/filesystem.hpp>
+#include <boost/dll.hpp>
 
 
 std::string SectionInfo::operator[](const std::string& key) const {
@@ -16,7 +17,7 @@ std::string SectionInfo::operator[](const std::string& key) const {
 ConfigManager::ConfigManager() {
     // 读取配置文件
     boost::property_tree::ptree pt;
-    boost::filesystem::path current_path = boost::filesystem::current_path();
+    boost::filesystem::path current_path = boost::dll::program_location().parent_path();
     boost::filesystem::path config_file_path = current_path / _config_file_relative_path;
     try {
         boost::property_tree::ini_parser::read_ini(config_file_path.string(), pt);
