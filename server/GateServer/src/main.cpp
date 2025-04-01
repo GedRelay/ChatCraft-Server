@@ -1,6 +1,8 @@
 #include "../include/CServer.h"
-#include "../include/const.h"
+#include "const.h"
 #include <cstring>
+
+#include "RedisManager.h"
 
 int main(){
     try{

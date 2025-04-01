@@ -12,14 +12,20 @@
 #include <json/value.h>
 #include "ConfigManager.h"
 #include <queue>
-
+#include <hiredis/hiredis.h>
+#include <mutex>
+#include <condition_variable>
+#include <atomic>
+#include <cstring>
 
 namespace beast = boost::beast;
 namespace http = beast::http;
 namespace net = boost::asio;
 using tcp = boost::asio::ip::tcp;
 
+
 enum CONST{
     IO_CONTEXT_POOL_SIZE = 2,
     GRPC_STUB_POOL_SIZE = 4,
+    REDIS_CONNECTION_POOL_SIZE = 4
 };

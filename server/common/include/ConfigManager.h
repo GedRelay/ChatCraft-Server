@@ -1,6 +1,5 @@
 #pragma once
-#include "../include/Singleton.h"
-#include <unordered_map>
+#include "const.h"
 
 class SectionInfo;
 // 每SectionInfo对象表示一个配置节，包含多个键值对
