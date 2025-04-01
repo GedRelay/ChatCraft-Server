@@ -21,7 +21,7 @@ LogicSystem::LogicSystem(){
             return;
         }
         // 向gRPC服务器发送请求
-        GetVarifyRsp grpc_response = VerifyGrpcClient::GetInstance()->GetVarifyCode(src_json["email"].asString());  // error, email, code
+        GetVerifyRsp grpc_response = VerifyGrpcClient::GetInstance()->GetVerifyCode(src_json["email"].asString());  // error, email, code
         if(grpc_response.error() != 0){
             response_json["status"] = "error";
             response_json["msg"] = "get verify code from VerifyServer error";

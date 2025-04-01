@@ -2,8 +2,6 @@
 #include "const.h"
 #include <cstring>
 
-#include "RedisManager.h"
-
 int main(){
     try{
         std::string host = ConfigManager::GetConfigAs("GateServer", "host");

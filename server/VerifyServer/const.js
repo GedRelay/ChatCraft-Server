@@ -1,5 +1,3 @@
-let code_prefix = "code_";
-
 const Errors = {
     Success : 0,
     RedisErr : 1,
@@ -7,4 +5,4 @@ const Errors = {
 };
 
 
-module.exports = {code_prefix, Errors}
+module.exports = {Errors}

@@ -8,14 +8,14 @@ using grpc::Channel;
 using grpc::ClientContext;
 using grpc::Status;
 
-using message::GetVarifyReq;
-using message::GetVarifyRsp;
-using message::VarifyService;
+using message::GetVerifyReq;
+using message::GetVerifyRsp;
+using message::VerifyService;
 
 class VerifyGrpcClient : public Singleton<VerifyGrpcClient> {
     friend class Singleton<VerifyGrpcClient>;
 public:
-    GetVarifyRsp GetVarifyCode(const std::string& email);
+    GetVerifyRsp GetVerifyCode(const std::string& email);
 
 private:
     VerifyGrpcClient();

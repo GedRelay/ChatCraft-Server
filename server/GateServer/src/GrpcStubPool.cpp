@@ -9,7 +9,7 @@ GrpcStubPool::GrpcStubPool():
     std::string verify_server_address = verify_server_host + ":" + verify_server_port;
     for (size_t i = 0; i < _pool_size; ++i) {
         auto channel = grpc::CreateChannel(verify_server_address, grpc::InsecureChannelCredentials());
-        _stub_queue.push(VarifyService::NewStub(channel));
+        _stub_queue.push(VerifyService::NewStub(channel));
     }
 }
 
@@ -23,7 +23,7 @@ GrpcStubPool::~GrpcStubPool(){
 }
 
 
-std::unique_ptr<VarifyService::Stub> GrpcStubPool::GetVerifyStub(){
+std::unique_ptr<VerifyService::Stub> GrpcStubPool::GetVerifyStub(){
     std::unique_lock<std::mutex> lock(_mutex);
     while (_stub_queue.empty() && !_is_shutdown) {
         _cond_var.wait(lock);
@@ -37,7 +37,7 @@ std::unique_ptr<VarifyService::Stub> GrpcStubPool::GetVerifyStub(){
 }
 
 
-void GrpcStubPool::ReturnVerifyStub(std::unique_ptr<VarifyService::Stub> stub){
+void GrpcStubPool::ReturnVerifyStub(std::unique_ptr<VerifyService::Stub> stub){
     std::lock_guard<std::mutex> lock(_mutex);
     _stub_queue.push(std::move(stub));
     _cond_var.notify_one();
