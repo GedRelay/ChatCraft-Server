@@ -5,6 +5,7 @@
 LogicSystem::LogicSystem(){
     // GET请求处理函数
     _get_handlers["/get_test"] = [](std::unordered_map<std::string, std::string> &params, http::response<http::dynamic_body> &response){
+        response.set(http::field::content_type, "text/plain");
         beast::ostream(response.body()) << "get_test\r\n";
         for (auto& param : params){
             beast::ostream(response.body()) << param.first << ": " << param.second << "\r\n";
@@ -12,25 +13,95 @@ LogicSystem::LogicSystem(){
     };
 
     // POST请求处理函数
+    // 获取验证码
     _post_handlers["/get_verify_code"] = [](Json::Value &src_json, http::response<http::dynamic_body> &response){
+        response.set(http::field::content_type, "application/json");
         Json::Value response_json;
+        // 检查参数
         if(!src_json.isMember("email")){
-            response_json["status"] = "error";
-            response_json["msg"] = "email not found";
+            response_json["status"] = -1;
+            response_json["msg"] = "email fields not found";
             beast::ostream(response.body()) << response_json.toStyledString();
             return;
         }
         // 向gRPC服务器发送请求
         GetVerifyRsp grpc_response = VerifyGrpcClient::GetInstance()->GetVerifyCode(src_json["email"].asString());  // error, email, code
         if(grpc_response.error() != 0){
-            response_json["status"] = "error";
+            response_json["status"] = -1;
             response_json["msg"] = "get verify code from VerifyServer error";
             beast::ostream(response.body()) << response_json.toStyledString();
             return;
         }
-        response_json["status"] = "ok";
+        response_json["status"] = 0;
         response_json["msg"] = "get verify code success";
-        response_json["verify_code"] = grpc_response.code();
+        beast::ostream(response.body()) << response_json.toStyledString();
+    };
+
+    // 注册用户
+    _post_handlers["/user_register"] = [](Json::Value &src_json, http::response<http::dynamic_body> &response){
+        response.set(http::field::content_type, "application/json");
+        Json::Value response_json;
+        // 检查参数
+        if(!src_json.isMember("user") || !src_json.isMember("email") || !src_json.isMember("passwd") || !src_json.isMember("passwd2") || !src_json.isMember("verifycode")){
+            response_json["status"] = -1;
+            response_json["msg"] = "fields not complete, need: user, email, passwd, passwd2, verifycode";
+            beast::ostream(response.body()) << response_json.toStyledString();
+            return;
+        }
+        // 检测参数合法性
+        // 1. email合法
+        // 2. passwd合法: 密码要求：1. 至少包含 8 个字符，最多包含 20 个字符 2. 必须包含数字和字母 3. 只允许包含以下特殊字符@#$%^&-+=()
+        // 3. passwd2合法: 和passwd相同
+        if(src_json["passwd"].asString() != src_json["passwd2"].asString()){
+            response_json["status"] = -1;
+            response_json["msg"] = "passwd not same";
+            beast::ostream(response.body()) << response_json.toStyledString();
+            return;
+        }
+        // 4. verifycode合法： redis中有存储，且与验证码相同
+        std::string key = ConfigManager::GetConfigAs<std::string>("Prefix", "verifycode_prefix") + src_json["email"].asString();
+        std::cout << "key: " << key << std::endl;
+        if(RedisManager::GetInstance()->Exists(key)){
+            std::string verifycode;
+            if(RedisManager::GetInstance()->Get(key, verifycode) == false){
+                response_json["status"] = -1;
+                response_json["msg"] = "get verify code from redis error";
+                beast::ostream(response.body()) << response_json.toStyledString();
+                return;
+            }
+            if(verifycode != src_json["verifycode"].asString()){
+                std::cout << "verifycode: " << verifycode << std::endl;
+                std::cout << "src_json[verifycode]: " << src_json["verifycode"].asString() << std::endl;
+                response_json["status"] = -1;
+                response_json["msg"] = "verification code is incorrect or expired";
+                beast::ostream(response.body()) << response_json.toStyledString();
+                return;
+            }
+        }
+        else{
+            response_json["status"] = -1;
+            response_json["msg"] = "The verification code is incorrect or expired";
+            beast::ostream(response.body()) << response_json.toStyledString();
+            return;
+        }
+        // 5. mysql中不存在相同的用户名
+        // 6. mysql中不存在相同的邮箱
+        // 将注册信息存入mysql，返回0表示用户名或邮箱已存在，返回-1表示mysql插入失败
+        int result = MysqlManager::GetInstance()->RegisterUser(src_json["user"].asString(), src_json["email"].asString(), src_json["passwd"].asString());
+        if(result == 0){
+            response_json["status"] = -1;
+            response_json["msg"] = "user or email already exists";
+            beast::ostream(response.body()) << response_json.toStyledString();
+            return;
+        }
+        else if(result == -1){
+            response_json["status"] = -1;
+            response_json["msg"] = "mysql insert error";
+            beast::ostream(response.body()) << response_json.toStyledString();
+            return;
+        }
+        response_json["status"] = 0;
+        response_json["msg"] = "user register success";
         beast::ostream(response.body()) << response_json.toStyledString();
     };
 }
@@ -53,7 +124,6 @@ bool LogicSystem::HandleGet(const http::request<http::dynamic_body> &request, ht
     _get_handlers[get_url](params, response);
     response.result(http::status::ok);
     response.set(http::field::server, "GateServer");
-    response.set(http::field::content_type, "application/json");
     return true;
 }
 
@@ -75,12 +145,12 @@ bool LogicSystem::HandlePost(const http::request<http::dynamic_body> &request, h
     Json::Value src_json;
     response.result(http::status::ok);
     response.set(http::field::server, "GateServer");
-    response.set(http::field::content_type, "application/json");
     // 解析json失败
     if(!_json_reader.parse(json_str, src_json)){  
+        response.set(http::field::content_type, "application/json");
         std::cerr << "json parse error" << std::endl;
         Json::Value response_json;
-        response_json["status"] = "error";
+        response_json["status"] = -1;
         response_json["msg"] = "json parse error";
         beast::ostream(response.body()) << response_json.toStyledString();
         return false;

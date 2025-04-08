@@ -19,6 +19,7 @@ target_include_directories(${PROJECT_NAME}
     PUBLIC ${CMAKE_CURRENT_BINARY_DIR}
     PUBLIC ${include_path}
     PUBLIC /usr/local/hiredis/include
+    PUBLIC /usr/local/mysqlconncpp8_3_0/include
 )
 
 
@@ -32,6 +33,7 @@ find_package(gRPC CONFIG REQUIRED
 
 target_link_directories(${PROJECT_NAME}
     PUBLIC /usr/local/hiredis/lib
+    PUBLIC /usr/local/mysqlconncpp8_3_0/lib64
 )
 
 # 链接库
@@ -43,6 +45,8 @@ target_link_libraries(${PROJECT_NAME}
     Boost::system
     Boost::filesystem
     hiredis
+    mysqlcppconn
+    mysqlcppconn8
 )
 
 

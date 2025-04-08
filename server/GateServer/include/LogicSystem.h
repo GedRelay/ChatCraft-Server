@@ -1,5 +1,7 @@
 #pragma once
 #include "const.h"
+#include "RedisManager.h"
+#include "MysqlManager.h"
 
 class HttpConnection;
 

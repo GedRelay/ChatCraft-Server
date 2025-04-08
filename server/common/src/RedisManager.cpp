@@ -147,3 +147,26 @@ bool RedisManager::Set(const std::string& key, const std::string& value) {
     returnRedisConnection(context);
     return true;
 }
+
+
+// 判断key是否存在
+bool RedisManager::Exists(const std::string& key) {
+    redisContext* context = GetRedisConnection();
+    if (context == nullptr) {  // 连接池已关闭
+        return false;
+    }
+    redisReply* reply = (redisReply*)redisCommand(context, "EXISTS %s", key.c_str());
+    if (reply == nullptr) {  // 执行命令失败
+        returnRedisConnection(context);
+        return false;
+    }
+    if (reply->type != REDIS_REPLY_INTEGER) {  // 判断失败
+        freeReplyObject(reply);
+        returnRedisConnection(context);
+        return false;
+    }
+    bool exists = reply->integer == 1;
+    freeReplyObject(reply);
+    returnRedisConnection(context);
+    return exists;
+}
