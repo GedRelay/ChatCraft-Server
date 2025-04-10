@@ -13,7 +13,7 @@ LogicSystem::LogicSystem(){
     };
 
     // POST请求处理函数
-    // 获取验证码
+    // 用户注册获取验证码
     _post_handlers["/get_verify_code"] = [](Json::Value &src_json, http::response<http::dynamic_body> &response){
         response.set(http::field::content_type, "application/json");
         Json::Value response_json;
@@ -25,7 +25,62 @@ LogicSystem::LogicSystem(){
             return;
         }
         // 向gRPC服务器发送请求
-        GetVerifyRsp grpc_response = VerifyGrpcClient::GetInstance()->GetVerifyCode(src_json["email"].asString());  // error, email, code
+        GetVerifyRsp grpc_response = VerifyGrpcClient::GetInstance()->RegisterGetVerifyCode(src_json["email"].asString());  // error, email, code
+        if(grpc_response.error() != 0){
+            response_json["status"] = -1;
+            response_json["msg"] = "get verify code from VerifyServer error";
+            beast::ostream(response.body()) << response_json.toStyledString();
+            return;
+        }
+        response_json["status"] = 0;
+        response_json["msg"] = "get verify code success";
+        beast::ostream(response.body()) << response_json.toStyledString();
+    };
+
+    // 重置密码获取验证码
+    _post_handlers["/reset_get_verify_code"] = [](Json::Value &src_json, http::response<http::dynamic_body> &response){
+        response.set(http::field::content_type, "application/json");
+        Json::Value response_json;
+        // 检查参数
+        if(!src_json.isMember("user") || !src_json.isMember("email")){
+            response_json["status"] = -1;
+            response_json["msg"] = "fields not complete, need: user, email";
+            beast::ostream(response.body()) << response_json.toStyledString();
+            return;
+        }
+
+        // 检查mysql中是否存在该邮箱, 1表示存在，0表示不存在，-1表示mysql错误
+        int exists_email = MysqlManager::GetInstance()->ExistsEmail(src_json["email"].asString());
+        if(exists_email == 0){
+            response_json["status"] = -1;
+            response_json["msg"] = "email not exists";
+            beast::ostream(response.body()) << response_json.toStyledString();
+            return;
+        }
+        else if(exists_email == -1){
+            response_json["status"] = -1;
+            response_json["msg"] = "mysql error";
+            beast::ostream(response.body()) << response_json.toStyledString();
+            return;
+        }
+
+        // 检查该邮箱对应的用户名是否匹配
+        int check_user_email = MysqlManager::GetInstance()->CheckUserAndEmail(src_json["user"].asString(), src_json["email"].asString());
+        if(check_user_email == 0){
+            response_json["status"] = -1;
+            response_json["msg"] = "user and email not match";
+            beast::ostream(response.body()) << response_json.toStyledString();
+            return;
+        }
+        else if(check_user_email == -1){
+            response_json["status"] = -1;
+            response_json["msg"] = "mysql error";
+            beast::ostream(response.body()) << response_json.toStyledString();
+            return;
+        }
+
+        // 向VerifyServer发送请求，获取验证码
+        GetVerifyRsp grpc_response = VerifyGrpcClient::GetInstance()->ResetGetVerifyCode(src_json["email"].asString());  // error, email, code
         if(grpc_response.error() != 0){
             response_json["status"] = -1;
             response_json["msg"] = "get verify code from VerifyServer error";
@@ -59,8 +114,7 @@ LogicSystem::LogicSystem(){
             return;
         }
         // 4. verifycode合法： redis中有存储，且与验证码相同
-        std::string key = ConfigManager::GetConfigAs<std::string>("Prefix", "verifycode_prefix") + src_json["email"].asString();
-        std::cout << "key: " << key << std::endl;
+        std::string key = ConfigManager::GetConfigAs<std::string>("Prefix", "register_verifycode_prefix") + src_json["email"].asString();
         if(RedisManager::GetInstance()->Exists(key)){
             std::string verifycode;
             if(RedisManager::GetInstance()->Get(key, verifycode) == false){
@@ -80,7 +134,7 @@ LogicSystem::LogicSystem(){
         }
         else{
             response_json["status"] = -1;
-            response_json["msg"] = "The verification code is incorrect or expired";
+            response_json["msg"] = "verification code is incorrect or expired";
             beast::ostream(response.body()) << response_json.toStyledString();
             return;
         }
@@ -100,8 +154,114 @@ LogicSystem::LogicSystem(){
             beast::ostream(response.body()) << response_json.toStyledString();
             return;
         }
+        // 删除redis中的验证码
+        RedisManager::GetInstance()->Del(key);
         response_json["status"] = 0;
         response_json["msg"] = "user register success";
+        beast::ostream(response.body()) << response_json.toStyledString();
+    };
+
+    // 重置密码
+    _post_handlers["/reset_password"] = [](Json::Value &src_json, http::response<http::dynamic_body> &response){
+        response.set(http::field::content_type, "application/json");
+        Json::Value response_json;
+        // 检查参数
+        if(!src_json.isMember("user") || !src_json.isMember("email") || !src_json.isMember("passwd") || !src_json.isMember("passwd2") || !src_json.isMember("verifycode")){
+            response_json["status"] = -1;
+            response_json["msg"] = "fields not complete, need: user, email, passwd, passwd2, verifycode";
+            beast::ostream(response.body()) << response_json.toStyledString();
+            return;
+        }
+        // 检测参数合法性
+        // 1. email合法
+        // 2. passwd合法: 密码要求：1. 至少包含 8 个字符，最多包含 20 个字符 2. 必须包含数字和字母 3. 只允许包含以下特殊字符@#$%^&-+=()
+        // 3. passwd2合法: 和passwd相同
+        if(src_json["passwd"].asString() != src_json["passwd2"].asString()){
+            response_json["status"] = -1;
+            response_json["msg"] = "passwd not same";
+            beast::ostream(response.body()) << response_json.toStyledString();
+            return;
+        }
+        // 4. verifycode合法： redis中有存储，且与验证码相同
+        std::string key = ConfigManager::GetConfigAs<std::string>("Prefix", "reset_verifycode_prefix") + src_json["email"].asString();
+        if(RedisManager::GetInstance()->Exists(key)){
+            std::string verifycode;
+            if(RedisManager::GetInstance()->Get(key, verifycode) == false){
+                response_json["status"] = -1;
+                response_json["msg"] = "get verify code from redis error";
+                beast::ostream(response.body()) << response_json.toStyledString();
+                return;
+            }
+            if(verifycode != src_json["verifycode"].asString()){
+                std::cout << "verifycode: " << verifycode << std::endl;
+                std::cout << "src_json[verifycode]: " << src_json["verifycode"].asString() << std::endl;
+                response_json["status"] = -1;
+                response_json["msg"] = "verification code is incorrect or expired";
+                beast::ostream(response.body()) << response_json.toStyledString();
+                return;
+            }
+        }
+        else{
+            response_json["status"] = -1;
+            response_json["msg"] = "verification code is incorrect or expired";
+            beast::ostream(response.body()) << response_json.toStyledString();
+            return;
+        }
+
+        // 5. 检查mysql中是否存在该邮箱, 1表示存在，0表示不存在，-1表示mysql错误
+        int exists_email = MysqlManager::GetInstance()->ExistsEmail(src_json["email"].asString());
+        if(exists_email == 0){
+            response_json["status"] = -1;
+            response_json["msg"] = "email not exists";
+            beast::ostream(response.body()) << response_json.toStyledString();
+            return;
+        }
+        else if(exists_email == -1){
+            response_json["status"] = -1;
+            response_json["msg"] = "mysql error";
+            beast::ostream(response.body()) << response_json.toStyledString();
+            return;
+        }
+
+        // 6. 检查该邮箱对应的用户名是否匹配
+        int check_user_email = MysqlManager::GetInstance()->CheckUserAndEmail(src_json["user"].asString(), src_json["email"].asString());
+        if(check_user_email == 0){
+            response_json["status"] = -1;
+            response_json["msg"] = "user and email not match";
+            beast::ostream(response.body()) << response_json.toStyledString();
+            return;
+        }
+        else if(check_user_email == -1){
+            response_json["status"] = -1;
+            response_json["msg"] = "mysql error";
+            beast::ostream(response.body()) << response_json.toStyledString();
+            return;
+        }
+
+        // 7. 将新密码存入mysql，返回0表示用户名或邮箱不存在，返回1表示成功，返回2表示新密码和旧密码相同，返回-1表示mysql修改失败
+        int result = MysqlManager::GetInstance()->ResetPassword(src_json["user"].asString(), src_json["email"].asString(), src_json["passwd"].asString());
+        if(result == 0){
+            response_json["status"] = -1;
+            response_json["msg"] = "user or email not exists";
+            beast::ostream(response.body()) << response_json.toStyledString();
+            return;
+        }
+        else if(result == 2){
+            response_json["status"] = -1;
+            response_json["msg"] = "new password same as old password";
+            beast::ostream(response.body()) << response_json.toStyledString();
+            return;
+        }
+        else if(result == -1){
+            response_json["status"] = -1;
+            response_json["msg"] = "mysql error";
+            beast::ostream(response.body()) << response_json.toStyledString();
+            return;
+        }
+        // 删除redis中的验证码
+        RedisManager::GetInstance()->Del(key);
+        response_json["status"] = 0;
+        response_json["msg"] = "reset password success";
         beast::ostream(response.body()) << response_json.toStyledString();
     };
 }

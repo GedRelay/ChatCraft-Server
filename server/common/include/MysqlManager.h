@@ -30,6 +30,9 @@ friend class Singleton<MysqlManager>;
 public:
     ~MysqlManager();
     int RegisterUser(const std::string& username, const std::string& email, const std::string& password);
+    int ExistsEmail(const std::string& email);
+    int CheckUserAndEmail(const std::string& username, const std::string& email);
+    int ResetPassword(const std::string& username, const std::string& email, const std::string& password);
 
 private:
     MysqlManager();

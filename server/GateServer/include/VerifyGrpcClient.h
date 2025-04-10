@@ -15,7 +15,8 @@ using message::VerifyService;
 class VerifyGrpcClient : public Singleton<VerifyGrpcClient> {
     friend class Singleton<VerifyGrpcClient>;
 public:
-    GetVerifyRsp GetVerifyCode(const std::string& email);
+    GetVerifyRsp RegisterGetVerifyCode(const std::string& email);
+    GetVerifyRsp ResetGetVerifyCode(const std::string& email);
 
 private:
     VerifyGrpcClient();

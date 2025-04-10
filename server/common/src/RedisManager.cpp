@@ -170,3 +170,25 @@ bool RedisManager::Exists(const std::string& key) {
     returnRedisConnection(context);
     return exists;
 }
+
+
+// 删除key, 成功返回true，失败返回false
+bool RedisManager::Del(const std::string& key) {
+    redisContext* context = GetRedisConnection();
+    if (context == nullptr) {  // 连接池已关闭
+        return false;
+    }
+    redisReply* reply = (redisReply*)redisCommand(context, "DEL %s", key.c_str());
+    if (reply == nullptr) {  // 执行命令失败
+        returnRedisConnection(context);
+        return false;
+    }
+    if (reply->type != REDIS_REPLY_INTEGER) {  // 删除失败
+        freeReplyObject(reply);
+        returnRedisConnection(context);
+        return false;
+    }
+    freeReplyObject(reply);
+    returnRedisConnection(context);
+    return true;
+}

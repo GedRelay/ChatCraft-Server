@@ -21,21 +21,6 @@ MysqlManager::~MysqlManager() {
     // Destructor implementation
 }
 
-
-// 注册用户, -1表示创建失败, 0表示用户已存在, 成功返回用户ID
-int MysqlManager::RegisterUser(const std::string& username, const std::string& email, const std::string& password) {
-    // 获取MySQL连接
-    std::unique_ptr<sql::Connection> connection = _mysql_connection_pool->GetConnection();
-    if (connection == nullptr) {
-        return -1;  // 连接池已关闭
-    }
-    // 创建用户
-    int result = _users_dao->RegisterUser(connection, username, email, password);
-    _mysql_connection_pool->ReturnConnection(std::move(connection));
-    return result;
-}
-
-
 // 初始化MySQL连接池
 MysqlConnectionPool::MysqlConnectionPool(const std::string& address, const std::string& user, const std::string& password, const std::string& database, size_t pool_size):
     _pool_size(pool_size) {
@@ -97,4 +82,60 @@ void MysqlConnectionPool::Close() {
         _mysql_connections.pop();
     }
     _pool_size = 0;
+}
+
+
+// 注册用户, -1表示创建失败, 0表示用户已存在, 成功返回用户ID
+int MysqlManager::RegisterUser(const std::string& username, const std::string& email, const std::string& password) {
+    // 获取MySQL连接
+    std::unique_ptr<sql::Connection> connection = _mysql_connection_pool->GetConnection();
+    if (connection == nullptr) {
+        return -1;  // 连接池已关闭
+    }
+    // 创建用户
+    int result = _users_dao->RegisterUser(connection, username, email, password);
+    _mysql_connection_pool->ReturnConnection(std::move(connection));
+    return result;
+}
+
+
+// 检查邮箱是否存在
+int MysqlManager::ExistsEmail(const std::string& email) {
+    // 获取MySQL连接
+    std::unique_ptr<sql::Connection> connection = _mysql_connection_pool->GetConnection();
+    if (connection == nullptr) {
+        return -1;  // 连接池已关闭
+    }
+    // 检查邮箱是否存在
+    int result = _users_dao->ExistsEmail(connection, email);
+    _mysql_connection_pool->ReturnConnection(std::move(connection));
+    return result;
+}
+
+
+// 检查用户名和邮箱是否匹配
+int MysqlManager::CheckUserAndEmail(const std::string& username, const std::string& email) {
+    // 获取MySQL连接
+    std::unique_ptr<sql::Connection> connection = _mysql_connection_pool->GetConnection();
+    if (connection == nullptr) {
+        return -1;  // 连接池已关闭
+    }
+    // 检查用户名和邮箱是否匹配
+    int result = _users_dao->CheckUserAndEmail(connection, username, email);
+    _mysql_connection_pool->ReturnConnection(std::move(connection));
+    return result;
+}
+
+
+// 重置密码
+int MysqlManager::ResetPassword(const std::string& username, const std::string& email, const std::string& password) {
+    // 获取MySQL连接
+    std::unique_ptr<sql::Connection> connection = _mysql_connection_pool->GetConnection();
+    if (connection == nullptr) {
+        return -1;  // 连接池已关闭
+    }
+    // 重置密码
+    int result = _users_dao->ResetPassword(connection, username, email, password);
+    _mysql_connection_pool->ReturnConnection(std::move(connection));
+    return result;
 }

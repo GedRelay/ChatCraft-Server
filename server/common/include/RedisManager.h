@@ -10,6 +10,7 @@ public:
     bool Get(const std::string& key, std::string& value); // 获取key的值
     bool Set(const std::string& key, const std::string& value); // 设置key的值
     bool Exists(const std::string& key); // 判断key是否存在
+    bool Del(const std::string& key); // 删除key
 private:
     RedisManager();
     bool Connnect(const std::string& host, int port, redisContext*& context); // 连接Redis
