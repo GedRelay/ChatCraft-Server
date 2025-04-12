@@ -8,13 +8,18 @@ docker start ged_mysql
 redis-server /usr/local/redis/etc/redis.conf
 ```
 
-3. 启动GateServer
+3. 启动StatusServer
 ```bash
-bin/GateServer
+bin/StatusServer
 ```
 
 4. 启动VerifyServer
 ```bash
 cd VerifyServer
 npm run server
+```
+
+5. 启动GateServer
+```bash
+bin/GateServer
 ```

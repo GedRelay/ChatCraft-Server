@@ -7,6 +7,20 @@
 #include <jdbc/cppconn/statement.h>
 #include <jdbc/cppconn/exception.h>
 
+
+struct UserInfo{
+    int uid;
+    std::string name;
+    std::string email;
+    std::string password;
+    UserInfo(){
+        uid = 0;
+        name = "";
+        email = "";
+        password = "";
+    }
+};
+
 class UsersDAO {
 public:
     UsersDAO();
@@ -16,5 +30,6 @@ public:
     int ExistsEmail(std::unique_ptr<sql::Connection>& connection, const std::string& email);
     int CheckUserAndEmail(std::unique_ptr<sql::Connection>& connection, const std::string& username, const std::string& email);
     int ResetPassword(std::unique_ptr<sql::Connection>& connection, const std::string& username, const std::string& email, const std::string& password);
+    int CheckEmailAndPassword(std::unique_ptr<sql::Connection>& connection, const std::string& email, const std::string& password, UserInfo& userInfo);
 private:
 };

@@ -1,6 +1,7 @@
 #include "../include/LogicSystem.h"
 #include "../include/HttpConnection.h"
 #include "../include/VerifyGrpcClient.h"
+#include "../include/StatusGrpcClient.h"
 
 LogicSystem::LogicSystem(){
     // GET请求处理函数
@@ -262,6 +263,74 @@ LogicSystem::LogicSystem(){
         RedisManager::GetInstance()->Del(key);
         response_json["status"] = 0;
         response_json["msg"] = "reset password success";
+        beast::ostream(response.body()) << response_json.toStyledString();
+    };
+
+    // 用户登录
+    _post_handlers["/user_login"] = [](Json::Value &src_json, http::response<http::dynamic_body> &response){
+        response.set(http::field::content_type, "application/json");
+        Json::Value response_json;
+        // 检查参数
+        if(!src_json.isMember("email") || !src_json.isMember("password")){
+            response_json["status"] = -1;
+            response_json["msg"] = "fields not complete, need: email, password";
+            beast::ostream(response.body()) << response_json.toStyledString();
+            return;
+        }
+
+        // mysql检查email是否被注册
+        int exists_email = MysqlManager::GetInstance()->ExistsEmail(src_json["email"].asString());
+        if(exists_email == 0){
+            response_json["status"] = -1;
+            response_json["msg"] = "account not exists";
+            beast::ostream(response.body()) << response_json.toStyledString();
+            return;
+        }
+        else if(exists_email == -1){
+            response_json["status"] = -1;
+            response_json["msg"] = "mysql error";
+            beast::ostream(response.body()) << response_json.toStyledString();
+            return;
+        }
+
+        // mysql检查密码是否正确
+        UserInfo userInfo;
+        int check_user_passwd = MysqlManager::GetInstance()->CheckEmailAndPassword(src_json["email"].asString(), src_json["password"].asString(), userInfo);
+        if(check_user_passwd == 0){
+            response_json["status"] = -1;
+            response_json["msg"] = "password is incorrect";
+            beast::ostream(response.body()) << response_json.toStyledString();
+            return;
+        }
+        else if(check_user_passwd == -1){
+            response_json["status"] = -1;
+            response_json["msg"] = "mysql error";
+            beast::ostream(response.body()) << response_json.toStyledString();
+            return;
+        }
+
+        // 查询StatusServer，找到合适的连接
+        auto reply = StatusGrpcClient::GetInstance()->GetChatServer(userInfo.uid);
+        if(reply.error() != ErrorCodes::SUCCESS){
+            response_json["status"] = -1;
+            response_json["msg"] = "get chat server from StatusServer error";
+            beast::ostream(response.body()) << response_json.toStyledString();
+            return;
+        }
+        
+        std::cout << "user login success" << std::endl;
+        response_json["status"] = 0;
+        response_json["msg"] = "user login success";
+        response_json["uid"] = std::to_string(userInfo.uid);
+        response_json["name"] = userInfo.name;
+        response_json["host"] = reply.host();
+        response_json["token"] = reply.token();
+        std::cout << "uid: " << userInfo.uid << std::endl;
+        std::cout << "name: " << userInfo.name << std::endl;
+        std::cout << "email: " << userInfo.email << std::endl;
+        std::cout << "host: " << reply.host() << std::endl;
+        std::cout << "port: " << reply.port() << std::endl;
+        std::cout << "token: " << reply.token() << std::endl;
         beast::ostream(response.body()) << response_json.toStyledString();
     };
 }

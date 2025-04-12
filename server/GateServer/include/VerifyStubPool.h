@@ -8,15 +8,15 @@ using message::GetVerifyRsp;
 using message::VerifyService;
 
 
-class GrpcStubPool : public Singleton<GrpcStubPool> {
-    friend class Singleton<GrpcStubPool>;
+class VerifyStubPool : public Singleton<VerifyStubPool> {
+    friend class Singleton<VerifyStubPool>;
 public:
-    ~GrpcStubPool();
+    ~VerifyStubPool();
     std::unique_ptr<VerifyService::Stub> GetVerifyStub();  // 获取一个 gRPC Stub
     void ReturnVerifyStub(std::unique_ptr<VerifyService::Stub> stub);  // 归还 gRPC Stub
     void Close();  // 关闭 gRPC Stub 池
 private:
-    GrpcStubPool();
+    VerifyStubPool();
 
     bool _is_shutdown;
     size_t _pool_size;

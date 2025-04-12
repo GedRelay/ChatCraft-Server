@@ -1,8 +1,8 @@
-#include "../include/GrpcStubPool.h"
+#include "../include/VerifyStubPool.h"
 
 
-GrpcStubPool::GrpcStubPool():
-    _pool_size(CONST::GRPC_STUB_POOL_SIZE),
+VerifyStubPool::VerifyStubPool():
+    _pool_size(CONST::VERIFY_STUB_POOL_SIZE),
     _is_shutdown(false) {
     std::string verify_server_host = ConfigManager::GetConfigAs("VerifyServer", "host");
     std::string verify_server_port = ConfigManager::GetConfigAs("VerifyServer", "port");
@@ -14,7 +14,7 @@ GrpcStubPool::GrpcStubPool():
 }
 
 
-GrpcStubPool::~GrpcStubPool(){
+VerifyStubPool::~VerifyStubPool(){
     std::lock_guard<std::mutex> lock(_mutex);
     Close();
     while (!_stub_queue.empty()) {
@@ -23,7 +23,7 @@ GrpcStubPool::~GrpcStubPool(){
 }
 
 
-std::unique_ptr<VerifyService::Stub> GrpcStubPool::GetVerifyStub(){
+std::unique_ptr<VerifyService::Stub> VerifyStubPool::GetVerifyStub(){
     std::unique_lock<std::mutex> lock(_mutex);
     while (_stub_queue.empty() && !_is_shutdown) {
         _cond_var.wait(lock);
@@ -37,14 +37,14 @@ std::unique_ptr<VerifyService::Stub> GrpcStubPool::GetVerifyStub(){
 }
 
 
-void GrpcStubPool::ReturnVerifyStub(std::unique_ptr<VerifyService::Stub> stub){
+void VerifyStubPool::ReturnVerifyStub(std::unique_ptr<VerifyService::Stub> stub){
     std::lock_guard<std::mutex> lock(_mutex);
     _stub_queue.push(std::move(stub));
     _cond_var.notify_one();
 }
 
 
-void GrpcStubPool::Close(){
+void VerifyStubPool::Close(){
     _is_shutdown = true;
     _cond_var.notify_all();
 }

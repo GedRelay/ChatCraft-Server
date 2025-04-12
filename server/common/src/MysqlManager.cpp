@@ -139,3 +139,17 @@ int MysqlManager::ResetPassword(const std::string& username, const std::string& 
     _mysql_connection_pool->ReturnConnection(std::move(connection));
     return result;
 }
+
+
+// 检查邮箱和密码是否匹配
+int MysqlManager::CheckEmailAndPassword(const std::string& email, const std::string& password, UserInfo& userInfo) {
+    // 获取MySQL连接
+    std::unique_ptr<sql::Connection> connection = _mysql_connection_pool->GetConnection();
+    if (connection == nullptr) {
+        return -1;  // 连接池已关闭
+    }
+    // 检查邮箱和密码是否匹配
+    int result = _users_dao->CheckEmailAndPassword(connection, email, password, userInfo);
+    _mysql_connection_pool->ReturnConnection(std::move(connection));
+    return result;
+}

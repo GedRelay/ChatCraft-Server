@@ -33,6 +33,7 @@ public:
     int ExistsEmail(const std::string& email);
     int CheckUserAndEmail(const std::string& username, const std::string& email);
     int ResetPassword(const std::string& username, const std::string& email, const std::string& password);
+    int CheckEmailAndPassword(const std::string& email, const std::string& password, UserInfo& userInfo);
 
 private:
     MysqlManager();

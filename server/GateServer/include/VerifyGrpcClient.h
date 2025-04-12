@@ -2,7 +2,7 @@
 #include "const.h"
 #include <grpcpp/grpcpp.h>
 #include "proto/message.grpc.pb.h"
-#include "GrpcStubPool.h"
+#include "VerifyStubPool.h"
 
 using grpc::Channel;
 using grpc::ClientContext;

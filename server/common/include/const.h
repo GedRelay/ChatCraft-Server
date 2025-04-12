@@ -26,7 +26,13 @@ using tcp = boost::asio::ip::tcp;
 
 enum CONST{
     IO_CONTEXT_POOL_SIZE = 2,
-    GRPC_STUB_POOL_SIZE = 4,
+    VERIFY_STUB_POOL_SIZE = 4,
+    STATUS_STUB_POOL_SIZE = 4,
     REDIS_CONNECTION_POOL_SIZE = 4,
     MYSQL_CONNECTION_POOL_SIZE = 5
+};
+
+
+enum ErrorCodes{
+    SUCCESS = 0
 };

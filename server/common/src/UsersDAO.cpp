@@ -121,3 +121,28 @@ int UsersDAO::ResetPassword(std::unique_ptr<sql::Connection>& connection, const 
         return -1;
     }
 }
+
+
+int UsersDAO::CheckEmailAndPassword(std::unique_ptr<sql::Connection>& connection, const std::string& email, const std::string& password, UserInfo& userInfo) {
+    // 检查邮箱和密码是否匹配
+    // 若匹配，则返回1，并将用户信息存入userInfo
+    // 若不匹配，则返回0
+    // 其他错误返回-1
+    try {
+        std::unique_ptr<sql::PreparedStatement> pstmt(connection->prepareStatement("select id, name, email, password from users where email = ? and password = ?"));
+        pstmt->setString(1, email);
+        pstmt->setString(2, password);
+        std::unique_ptr<sql::ResultSet> res(pstmt->executeQuery());
+        if (res->next()) {
+            userInfo.uid = res->getInt("id");
+            userInfo.name = res->getString("name");
+            userInfo.email = res->getString("email");
+            userInfo.password = res->getString("password");
+            return 1;  // 邮箱和密码匹配
+        }
+        return 0;  // 邮箱和密码不匹配
+    } catch (sql::SQLException& e) {
+        std::cerr << "Error checking email and password: " << e.what() << std::endl;
+        return -1;
+    }
+}
