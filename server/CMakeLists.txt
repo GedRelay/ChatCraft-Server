@@ -11,5 +11,6 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/lib")  # 设置�
 add_subdirectory(common)
 add_subdirectory(GateServer)
 add_subdirectory(StatusServer)
+add_subdirectory(ChatServer)
 
 

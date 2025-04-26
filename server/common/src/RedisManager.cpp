@@ -24,7 +24,8 @@ RedisManager::RedisManager() :
         ++_pool_size;
     }
     if( _redis_connections_pool.size() == 0) {
-        throw std::runtime_error("创建Redis连接池失败");
+        std::cout << "Redis连接池初始化失败" << std::endl;
+        Close();
     }
 }
 
@@ -59,6 +60,7 @@ redisContext* RedisManager::GetRedisConnection() {
         _cond.wait(lock);
     }
     if (_is_shutdown) {
+        std::cout << "Redis连接池已关闭" << std::endl;
         return nullptr;
     }
     redisContext* context = _redis_connections_pool.front();
@@ -120,9 +122,17 @@ bool RedisManager::Get(const std::string& key, std::string& value) {
         returnRedisConnection(context);
         return false;
     }
+    if( reply->str == nullptr) {  // key不存在
+        std::cout << "key: " << key << " 不存在" << std::endl;
+        freeReplyObject(reply);
+        returnRedisConnection(context);
+        return false;
+    }
+    
     value = reply->str;
     freeReplyObject(reply);
     returnRedisConnection(context);
+    std::cout << "redis get success, key: " << key << ", value: " << value << std::endl;
     return true;
 }
 
@@ -145,6 +155,7 @@ bool RedisManager::Set(const std::string& key, const std::string& value) {
     }
     freeReplyObject(reply);
     returnRedisConnection(context);
+    std::cout << "redis set success, key: " << key << ", value: " << value << std::endl;
     return true;
 }
 

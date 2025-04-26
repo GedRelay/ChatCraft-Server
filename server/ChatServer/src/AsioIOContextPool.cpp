@@ -1,12 +1,12 @@
 #include "../include/AsioIOContextPool.h"
 
-
 AsioIOContextPool::AsioIOContextPool():
-    _pool_size(CONST::GATESERVER_IO_CONTEXT_POOL_SIZE) {
+    _pool_size(CONST::CHATSERVER_IO_CONTEXT_POOL_SIZE),
+    _next_idx(0){
     _io_contexts = std::vector<net::io_context>(_pool_size);
-    for (size_t i = 0; i < _pool_size; ++i) {
+    for(size_t i = 0; i < _pool_size; i++){
         _work_guards.emplace_back(net::make_work_guard(_io_contexts[i].get_executor()));
-        _threads.emplace_back([this, i]() {
+        _threads.emplace_back([this, i](){
             _io_contexts[i].run();
         });
     }
@@ -20,9 +20,11 @@ AsioIOContextPool::~AsioIOContextPool(){
 
 net::io_context& AsioIOContextPool::GetIOContext(){
     std::lock_guard<std::mutex> lock(_mutex);
-    net::io_context& io_context = _io_contexts[_index];
-    _index = (_index + 1) % _pool_size;
-    return io_context;
+	auto& io_context = _io_contexts[_next_idx++];
+	if (_next_idx == _pool_size) {
+		_next_idx = 0;
+	}
+	return io_context;
 }
 
 
@@ -37,5 +39,3 @@ void AsioIOContextPool::Stop(){
         }
     }
 }
-
-

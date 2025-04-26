@@ -268,12 +268,14 @@ LogicSystem::LogicSystem(){
 
     // 用户登录
     _post_handlers["/user_login"] = [](Json::Value &src_json, http::response<http::dynamic_body> &response){
+        std::cout << "user login" << std::endl;
         response.set(http::field::content_type, "application/json");
         Json::Value response_json;
         // 检查参数
         if(!src_json.isMember("email") || !src_json.isMember("password")){
             response_json["status"] = -1;
             response_json["msg"] = "fields not complete, need: email, password";
+            std::cout << "fields not complete, need: email, password" << std::endl;
             beast::ostream(response.body()) << response_json.toStyledString();
             return;
         }
@@ -283,12 +285,14 @@ LogicSystem::LogicSystem(){
         if(exists_email == 0){
             response_json["status"] = -1;
             response_json["msg"] = "account not exists";
+            std::cout << "account not exists" << std::endl;
             beast::ostream(response.body()) << response_json.toStyledString();
             return;
         }
         else if(exists_email == -1){
             response_json["status"] = -1;
             response_json["msg"] = "mysql error";
+            std::cout << "mysql error" << std::endl;
             beast::ostream(response.body()) << response_json.toStyledString();
             return;
         }
@@ -299,12 +303,14 @@ LogicSystem::LogicSystem(){
         if(check_user_passwd == 0){
             response_json["status"] = -1;
             response_json["msg"] = "password is incorrect";
+            std::cout << "password is incorrect" << std::endl;
             beast::ostream(response.body()) << response_json.toStyledString();
             return;
         }
         else if(check_user_passwd == -1){
             response_json["status"] = -1;
             response_json["msg"] = "mysql error";
+            std::cout << "mysql error" << std::endl;
             beast::ostream(response.body()) << response_json.toStyledString();
             return;
         }
@@ -314,6 +320,7 @@ LogicSystem::LogicSystem(){
         if(reply.error() != ErrorCodes::SUCCESS){
             response_json["status"] = -1;
             response_json["msg"] = "get chat server from StatusServer error";
+            std::cout << "get chat server from StatusServer error" << std::endl;
             beast::ostream(response.body()) << response_json.toStyledString();
             return;
         }
@@ -324,6 +331,7 @@ LogicSystem::LogicSystem(){
         response_json["uid"] = std::to_string(userInfo.uid);
         response_json["name"] = userInfo.name;
         response_json["host"] = reply.host();
+        response_json["port"] = reply.port();
         response_json["token"] = reply.token();
         std::cout << "uid: " << userInfo.uid << std::endl;
         std::cout << "name: " << userInfo.name << std::endl;
@@ -370,6 +378,7 @@ bool LogicSystem::HandlePost(const http::request<http::dynamic_body> &request, h
     }
     // 解析json
     auto json_str = boost::beast::buffers_to_string(request.body().data());
+    std::cout << "post_url: " << post_url << std::endl;
     std::cout << "json_str: " << json_str << std::endl;
     Json::Value src_json;
     response.result(http::status::ok);

@@ -23,3 +23,9 @@ npm run server
 ```bash
 bin/GateServer
 ```
+
+6. 启动ChatServer
+```bash
+bin ChatServer 1
+bin ChatServer 2
+```

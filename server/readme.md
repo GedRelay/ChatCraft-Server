@@ -40,6 +40,18 @@ GateServer 解析信息合法性以及验证码合法性
 如果合法，调用数据库修改用户密码，同时删除redis中的验证码
 
 
+登录流程：
+用户在客户端输入邮箱和密码后，发送到GateServer（post, /user_login）
+然后GeteServer在Mysql中检查账号密码是否匹配
+如果匹配，则向StatusServer发送请求，StatusServer生成登录token存入Redis，并分配一个ChatServer的地址，返回给GateServer
+GateServer将token以及ChatServer服务器信息返回给客户端
+客户端再使用收到的token，向分配到的ChatServer发送登录请求
+ChatServer收到客户端的登录请求后，向StatusServer发送请求验证token的合法性
+如果token合法，则向客户端返回登录成功的信息
+客户端即进入聊天界面
+
+
+
 Client和GateServer之间使用http协议进行通信
 Client通过提交POST请求和JSON格式的数据来与GateServer进行交互
 1. 如果url不存在，则GateServer返回文本"url not found"

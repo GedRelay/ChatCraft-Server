@@ -1,5 +1,6 @@
 #pragma once
 #include "const.h"
+#include <hiredis/hiredis.h>
 
 class RedisManager : public Singleton<RedisManager> {
 friend class Singleton<RedisManager>;
